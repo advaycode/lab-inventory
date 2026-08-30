@@ -497,48 +497,6 @@
    "parent": "hardware",
    "slug": "hardware-bundles",
    "sortOrder": 88
-  },
-  {
-   "catId": "kits",
-   "name": "KITS",
-   "parent": "",
-   "slug": "kits",
-   "sortOrder": 89
-  },
-  {
-   "catId": "ftc-kits",
-   "name": "FTC Kits",
-   "parent": "kits",
-   "slug": "ftc-kits",
-   "sortOrder": 90
-  },
-  {
-   "catId": "chassis-kits",
-   "name": "Chassis Kits",
-   "parent": "kits",
-   "slug": "chassis-kits",
-   "sortOrder": 91
-  },
-  {
-   "catId": "linear-motion-kits",
-   "name": "Linear Motion Kits",
-   "parent": "kits",
-   "slug": "linear-motion-kits",
-   "sortOrder": 92
-  },
-  {
-   "catId": "pan-kits",
-   "name": "Pan Kits",
-   "parent": "kits",
-   "slug": "pan-kits",
-   "sortOrder": 93
-  },
-  {
-   "catId": "merch",
-   "name": "MERCH",
-   "parent": "",
-   "slug": "merch",
-   "sortOrder": 95
   }
  ]
 }
