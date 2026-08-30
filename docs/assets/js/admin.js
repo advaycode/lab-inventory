@@ -12,8 +12,7 @@
 import * as api from "./api.js";
 import { store, loadCatalog, loadCategories, search, imageFor,
          upsertPartLocal, removePartLocal, applyDecisionLocal, getPartLocal } from "./store.js";
-import { SITE_TITLE, PAGE_SIZE, SEARCH_DEBOUNCE, IMAGE_MAX_PX, IMAGE_QUALITY,
-         PREVIEW_ADMIN_SHA256 } from "./config.js";
+import { SITE_TITLE, PAGE_SIZE, SEARCH_DEBOUNCE, IMAGE_MAX_PX, IMAGE_QUALITY } from "./config.js";
 
 /* -------------------------------------------------------------------------- */
 /* helpers                                                                     */
@@ -25,15 +24,9 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const icon = (id, cls = "icon") => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
-/* Preview mode: the backend does not exist yet (API_URL is empty), so the shell
-   is shown read-only behind a courtesy password. Nothing here is security --
-   see the note on PREVIEW_ADMIN_SHA256 in config.js. */
-let previewMode = false;
-
-async function sha256Hex(text) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
+/* No client-side gate exists. The Apps Script backend is the only thing that
+   decides whether a password is correct, and it does so on Google's servers. */
+const previewMode = false;
 
 function debounce(fn, ms) {
   let t = 0;
@@ -139,21 +132,7 @@ function wireGate() {
       return;
     }
     if (!api.hasApi()) {
-      btn.disabled = true;
-      btn.textContent = "Checking...";
-      let match = false;
-      try { match = (await sha256Hex(password)) === PREVIEW_ADMIN_SHA256; } catch { match = false; }
-      btn.disabled = false;
-      btn.textContent = "Sign in";
-      if (!match) {
-        err.textContent = "That password did not work.";
-        pw.setAttribute("aria-invalid", "true");
-        pw.select();
-        return;
-      }
-      previewMode = true;
-      pw.value = "";
-      await mountShell();
+      err.textContent = "API_URL is empty in assets/js/config.js, so there is nothing to sign in to.";
       return;
     }
     btn.disabled = true;
@@ -204,6 +183,7 @@ async function mountShell() {
 
   $$("[data-tab]").forEach((b) => b.addEventListener("click", () => selectTab(b.dataset.tab)));
   $("#refreshBtn").addEventListener("click", () => loadQueue(true));
+  $("#approveAllBtn").addEventListener("click", approveAll);
   wireQueue();
   $("#newPartBtn").addEventListener("click", () => openEditor(null));
 
@@ -322,6 +302,12 @@ function renderQueue() {
   pill.textContent = String(n);
   pill.classList.toggle("pill--zero", n === 0);
 
+  const aa = $("#approveAllBtn");
+  if (aa && !aa.disabled) {
+    aa.hidden = n === 0;
+    if (!approveAllArmed) aa.textContent = `Approve all (${n})`;
+  }
+
   const units = st.queue.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
   const overdueCount = st.queue.filter((r) => isOverdue(r.returnDate)).length;
   $("#queueMetrics").innerHTML = `
@@ -431,6 +417,64 @@ function wireQueue() {
  * availability moves with it; if the server refuses, both go back exactly
  * where they were.
  */
+/* Approve-all. Two-step rather than a confirm() dialog: the first click arms
+   the button, the second commits, and it disarms itself after 5s. Requests are
+   sent one at a time on purpose -- the backend takes a script lock per write,
+   so firing them in parallel would just pile up on that lock. Anything the
+   server rejects (a checkout that no longer fits the shelf, say) is reported
+   rather than swallowed, and the queue is reloaded from the server at the end
+   so what you see is the truth, not our optimistic guess. */
+let approveAllArmed = false;
+let approveAllTimer = null;
+
+function disarmApproveAll() {
+  approveAllArmed = false;
+  clearTimeout(approveAllTimer);
+  const b = $("#approveAllBtn");
+  if (b) { b.classList.remove("btn--danger"); b.textContent = `Approve all (${st.queue.length})`; }
+}
+
+async function approveAll() {
+  const btn = $("#approveAllBtn");
+  const items = st.queue.slice();
+  if (!items.length) return;
+
+  if (!approveAllArmed) {
+    approveAllArmed = true;
+    btn.classList.add("btn--danger");
+    btn.textContent = `Approve all ${items.length}? Click again`;
+    clearTimeout(approveAllTimer);
+    approveAllTimer = setTimeout(disarmApproveAll, 5000);
+    return;
+  }
+
+  disarmApproveAll();
+  btn.disabled = true;
+  let done = 0;
+  const failed = [];
+  for (const req of items) {
+    btn.textContent = `Approving ${done + 1} of ${items.length}...`;
+    try {
+      const data = await api.decide(req.requestId, "approve", "");
+      if (data?.part) upsertPartLocal(data.part);
+      st.queue = st.queue.filter((r) => r.requestId !== req.requestId);
+      done += 1;
+      renderQueue();
+      if (st.tab === "parts") renderPartList();
+    } catch (e) {
+      if (e.code === "UNAUTHORIZED") { btn.disabled = false; return; }
+      failed.push(`${req.quantity} x ${req.partName || req.partId}: ${e.message}`);
+    }
+  }
+  btn.disabled = false;
+  await loadQueue(true);
+  if (failed.length) {
+    toast(`Approved ${done}. ${failed.length} could not be approved - ${failed[0]}`, "err", 10000);
+  } else {
+    toast(`Approved all ${done}.`);
+  }
+}
+
 async function decide(req, decision, adminNote, row) {
   row.classList.add("is-busy");
 
