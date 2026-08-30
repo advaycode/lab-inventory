@@ -118,7 +118,7 @@
   /* A band along the bottom of the viewport that scrolling content never
      enters. The credit lives in it, which is how it can be fixed bottom-left
      and still be guaranteed never to sit on top of a control. */
-  --credit-strip: 26px;
+  --credit-strip: 40px;
 }
 
 /* ---------- reset ---------- */
@@ -301,22 +301,42 @@ button, input, select, textarea { font: inherit; color: inherit; }
   position: fixed;
   left: 14px;
   /* vertically centred inside --credit-strip, so it can never ride over content */
-  bottom: 5px;
+  bottom: 7px;
   z-index: var(--z-credit);
-  font-size: 9px;
-  letter-spacing: .06em;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  letter-spacing: .04em;
   line-height: 1;
-  color: var(--text-3);
-  opacity: .75;
+  color: var(--text-2);
+  opacity: .92;
   font-family: var(--font);
   pointer-events: none;
   user-select: none;
   /* a hairline plate so it stays readable over a scrolled card edge without
      ever looking like a control */
-  padding: 4px 6px;
-  border-radius: var(--r-sm);
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(2px);
+  padding: 5px 9px 5px 5px;
+  border-radius: 999px;
+  border: 1px solid var(--line-soft);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+/* The mark ships with its own dark plate, so it is rounded rather than keyed
+   out -- it reads as a badge in both themes instead of a floating smudge. */
+.credit__logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: #2f2f31;
+}
+
+@media (max-width: 380px) {
+  .credit { font-size: 10px; gap: 6px; }
+  .credit__logo { width: 20px; height: 20px; }
 }
 
 /* ---------- skeletons ---------- */
