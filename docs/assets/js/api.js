@@ -216,6 +216,8 @@ export const deletePart = (partId) => apiAuth({ action: "deletePart", partId });
 export const adjustQty = (partId, qtyTotal) => apiAuth({ action: "adjustQty", partId, qtyTotal });
 export const uploadImage = (partId, filename, mimeType, dataBase64) =>
   apiAuth({ action: "uploadImage", partId, filename, mimeType, dataBase64 });
+export const bulkLocation = (partIds, location) =>
+  apiAuth({ action: "bulkLocation", partIds, location });
 export const bulkImport = (parts, mode = "upsert") =>
   apiAuth({ action: "bulkImport", parts, mode });
 export const stats = () => apiAuth({ action: "stats" });

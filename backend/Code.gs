@@ -79,6 +79,7 @@ function doPost(e) {
       case 'adjustQty':    result = authGuard(body, adjustQtyAction); break;
       case 'uploadImage':  result = authGuard(body, uploadImageAction); break;
       case 'bulkImport':   result = authGuard(body, bulkImportAction); break;
+      case 'bulkLocation': result = authGuard(body, bulkLocationAction); break;
       case 'stats':        result = authGuard(body, statsAction); break;
       default:             result = fail('BAD_ACTION', 'Unknown action: ' + action);
     }
@@ -584,6 +585,52 @@ function getOrCreateImagesFolder() {
   var folder = it.hasNext() ? it.next() : DriveApp.createFolder('LabInventory Images');
   props.setProperty('DRIVE_FOLDER_ID', folder.getId());
   return folder;
+}
+
+/**
+ * Set one Location across many parts in a single pass.
+ *
+ * The admin UI groups a part family (one U-Beam in 21 lengths) behind one
+ * location field. Doing that as 21 separate upsertPart calls costs ~2.7s each
+ * because every one pays a round trip plus its own script lock. This reads the
+ * sheet once, edits the Location column in memory, and writes once: about two
+ * seconds for the whole family regardless of size.
+ */
+function bulkLocationAction(body) {
+  var ids = body.partIds;
+  if (!ids || !ids.length) return fail('BAD_INPUT', 'partIds is required.');
+  if (ids.length > 500) return fail('BAD_INPUT', 'Too many parts in one call (max 500).');
+  var location = sanitizeStr(body.location, 200);
+
+  return withLock(function () {
+    var sheet = sh('Parts');
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return fail('NOT_FOUND', 'There are no parts yet.');
+
+    var range = sheet.getRange(2, 1, lastRow - 1, PARTS_HEADERS.length);
+    var values = range.getValues();
+
+    var want = {};
+    for (var i = 0; i < ids.length; i++) want[String(ids[i])] = true;
+
+    var LOCATION_COL = 9;   // J
+    var UPDATED_COL = 15;   // P
+    var now = nowIso();
+    var updated = 0;
+    for (var r = 0; r < values.length; r++) {
+      if (want[String(values[r][0])]) {
+        values[r][LOCATION_COL] = location;
+        values[r][UPDATED_COL] = now;
+        updated++;
+      }
+    }
+    if (!updated) return fail('NOT_FOUND', 'None of those parts exist.');
+
+    range.setValues(values);
+    bumpCatalogVersion();
+    appendLog('admin', 'bulkLocation', location || '(cleared)', JSON.stringify({ count: updated }));
+    return ok({ updated: updated, location: location });
+  });
 }
 
 function bulkImportAction(body) {

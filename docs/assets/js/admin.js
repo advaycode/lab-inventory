@@ -97,6 +97,9 @@ const st = {
   partResults: [],
   shown: 0,
   catalogLoaded: false,
+  grouped: true,
+  groups: [],
+  openGroups: new Set(),
 };
 
 /* -------------------------------------------------------------------------- */
@@ -186,6 +189,18 @@ async function mountShell() {
   $("#approveAllBtn").addEventListener("click", approveAll);
   wireQueue();
   $("#newPartBtn").addEventListener("click", () => openEditor(null));
+
+  $("#plist").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || !e.target.matches('[data-role="loc"]')) return;
+    e.preventDefault();
+    e.target.closest(".pgroup__bulk").querySelector('[data-act="applyloc"]').click();
+  });
+
+  $("#groupToggle").addEventListener("change", (e) => {
+    st.grouped = e.target.checked;
+    st.shown = 0;
+    renderPartList();
+  });
 
   const pq = $("#pq");
   const onType = debounce(() => {
@@ -528,10 +543,164 @@ function runPartSearch() {
   const t0 = performance.now();
   st.partResults = search({ query: st.partQuery });
   window.__lastAdminSearchMs = performance.now() - t0;
+  buildGroups();
   st.shown = 0;
   $("#partCount").textContent = st.partResults.length
     ? `${st.partResults.length} of ${store.parts.length}` : "";
   renderPartList();
+}
+
+/* --------------------------------------------------------------------------
+   Grouping.
+
+   goBILDA sells families: one U-Beam in eleven lengths, one screw in six.
+   They live in the same bin, so asking for a location eleven times is busywork.
+   The family name is the product name with its trailing variant parenthetical
+   removed -- "1101 Series U-Beam (3 Hole, 24mm Length)" -> "1101 Series U-Beam".
+   A family of one is left as a plain row; grouping a single part helps nobody.
+   -------------------------------------------------------------------------- */
+
+function familyOf(p) {
+  let n = String(p.name || "").trim();
+  n = n.replace(/\s*\([^()]*\)\s*$/, "").trim();          // drop "(3 Hole, 24mm Length)"
+  n = n.replace(/\s*[-–,]\s*\d[\d.]*\s*mm\b.*$/i, "").trim(); // drop ", 24mm Length" tails
+  return n || String(p.sku || "").slice(0, 4) || p.partId;
+}
+
+const slugKey = (k) => k.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "g";
+
+function buildGroups() {
+  const map = new Map();
+  for (const idx of st.partResults) {
+    const p = store.parts[idx];
+    const key = familyOf(p);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(idx);
+  }
+  st.groups = [...map.entries()].map(([name, idxs]) => ({ name, key: slugKey(name), idxs }));
+}
+
+/* The location shared by the whole family, or "" when they disagree -- so the
+   bulk field shows what is already true instead of inviting a blind overwrite. */
+function commonLocation(idxs) {
+  const locs = new Set(idxs.map((i) => store.parts[i].location || ""));
+  return locs.size === 1 ? [...locs][0] : "";
+}
+
+function partRowHtml(p) {
+  const src = imageFor(p);
+  return `
+    <button class="prow" type="button" data-id="${esc(p.partId)}">
+      <span class="prow__thumb">${src
+        ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">`
+        : icon("i-box")}</span>
+      <span style="min-width:0">
+        <span class="prow__name">${esc(p.name)}</span>
+        <span class="prow__sku">${esc(p.sku)}</span>
+      </span>
+      <span class="prow__loc">${p.location ? esc(p.location) : "no location"}</span>
+      <span class="prow__qty">${p.qtyAvailable}<span>/${p.qtyTotal}</span></span>
+      <span class="prow__edit">${icon("i-edit")}</span>
+    </button>`;
+}
+
+function groupHtml(g) {
+  const parts = g.idxs.map((i) => store.parts[i]);
+  const open = st.openGroups.has(g.key);
+  const located = parts.filter((p) => p.location).length;
+  const units = parts.reduce((a, p) => a + (p.qtyTotal || 0), 0);
+  const avail = parts.reduce((a, p) => a + (p.qtyAvailable || 0), 0);
+  const first = parts.find((p) => imageFor(p));
+  const src = first ? imageFor(first) : "";
+  const cat = [parts[0].category, parts[0].subcategory].filter(Boolean).join(" / ");
+  const loc = commonLocation(g.idxs);
+
+  if (parts.length === 1) return partRowHtml(parts[0]);
+
+  return `
+  <div class="pgroup" data-key="${esc(g.key)}">
+    <button class="pgroup__head" type="button" data-act="toggle" aria-expanded="${open}">
+      <span class="pgroup__chev ${open ? "is-open" : ""}">${icon("i-chev")}</span>
+      <span class="pgroup__thumb">${src
+        ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">`
+        : icon("i-box")}</span>
+      <span style="min-width:0">
+        <span class="prow__name">${esc(g.name)}</span>
+        <span class="prow__sku">${parts.length} sizes${cat ? " &middot; " + esc(cat) : ""}</span>
+      </span>
+      <span class="prow__loc">${located === parts.length && loc
+        ? esc(loc)
+        : located ? `${located} of ${parts.length} located` : "no location"}</span>
+      <span class="prow__qty">${avail}<span>/${units}</span></span>
+    </button>
+    <div class="pgroup__bulk">
+      <label class="u-sr" for="loc-${esc(g.key)}">Location for all ${parts.length}</label>
+      <input class="input" id="loc-${esc(g.key)}" data-role="loc" placeholder="Shelf B3, Bin 12"
+             value="${esc(loc)}" autocomplete="off">
+      <button class="btn btn--sm btn--primary" type="button" data-act="applyloc">
+        Set for all ${parts.length}
+      </button>
+    </div>
+    <div class="pgroup__body" ${open ? "" : "hidden"}>
+      ${open ? parts.map(partRowHtml).join("") : ""}
+    </div>
+  </div>`;
+}
+
+/* One PATCH per member. Sequential on purpose: the backend takes a script lock
+   per write, so parallel calls only contend on it. Failures are reported, not
+   swallowed, and the ones that succeeded stay applied. */
+async function applyGroupLocation(key, location, btn) {
+  const g = st.groups.find((x) => x.key === key);
+  if (!g) return;
+  const members = g.idxs.map((i) => store.parts[i]);
+  const label = `Set for all ${members.length}`;
+  btn.disabled = true;
+
+  // Fast path: one server call sets the whole family. Older deployments of the
+  // Apps Script do not have this action yet, so a BAD_ACTION falls back to the
+  // slow per-part loop rather than failing in the admin's face.
+  btn.textContent = `Saving ${members.length}...`;
+  try {
+    const res = await api.bulkLocation(members.map((p) => p.partId), location);
+    for (const p of members) upsertPartLocal({ ...p, location });
+    btn.disabled = false;
+    btn.textContent = label;
+    renderPartList();
+    toast(location
+      ? `Set location on ${res.updated ?? members.length} parts.`
+      : `Cleared location on ${res.updated ?? members.length} parts.`);
+    return;
+  } catch (e) {
+    if (e.code === "UNAUTHORIZED") { btn.disabled = false; return; }
+    if (e.code !== "BAD_ACTION") {
+      btn.disabled = false;
+      btn.textContent = label;
+      toast(`Could not set the location: ${e.message}`, "err", 9000);
+      return;
+    }
+  }
+
+  // Fallback: one write per part. Sequential because the backend takes a
+  // script lock per write, so parallel calls only queue on it anyway.
+  let done = 0;
+  const failed = [];
+  for (const p of members) {
+    btn.textContent = `Saving ${done + 1} of ${members.length}...`;
+    try {
+      const data = await api.upsertPart({ partId: p.partId, location });
+      if (data?.part) upsertPartLocal(data.part);
+      done += 1;
+    } catch (e) {
+      if (e.code === "UNAUTHORIZED") { btn.disabled = false; return; }
+      failed.push(`${p.sku}: ${e.message}`);
+    }
+  }
+  btn.disabled = false;
+  btn.textContent = label;
+  renderPartList();
+  if (failed.length) toast(`Set ${done} of ${members.length}. First problem - ${failed[0]}`, "err", 9000);
+  else toast(`Set location on ${done} parts.`);
 }
 
 function renderPartList(append = false) {
@@ -550,36 +719,24 @@ function renderPartList(append = false) {
     return;
   }
 
-  const next = Math.min(st.partResults.length, st.shown + PAGE_SIZE);
-  const slice = st.partResults.slice(append ? st.shown : 0, next);
-  const html = slice.map((idx) => {
-    const p = store.parts[idx];
-    const src = imageFor(p);
-    return `
-    <button class="prow" type="button" data-id="${esc(p.partId)}">
-      <span class="prow__thumb">${src
-        ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">`
-        : icon("i-box")}</span>
-      <span style="min-width:0">
-        <span class="prow__name">${esc(p.name)}</span>
-        <span class="prow__sku">${esc(p.sku)}</span>
-      </span>
-      <span class="prow__loc">${p.location ? esc(p.location) : "no location"}</span>
-      <span class="prow__qty">${p.qtyAvailable}<span>/${p.qtyTotal}</span></span>
-      <span class="prow__edit">${icon("i-edit")}</span>
-    </button>`;
-  }).join("");
+  const units = st.grouped ? st.groups : st.partResults;
+  const next = Math.min(units.length, st.shown + PAGE_SIZE);
+  const slice = units.slice(append ? st.shown : 0, next);
+  const html = st.grouped
+    ? slice.map(groupHtml).join("")
+    : slice.map((idx) => partRowHtml(store.parts[idx])).join("");
 
   if (append) list.insertAdjacentHTML("beforeend", html);
-  else { list.innerHTML = html; list.onclick = onPartRowClick; }
+  else { list.innerHTML = html; list.onclick = onPartListClick; }
   st.shown = next;
 
   const more = $("#more");
   observer?.disconnect();
-  if (st.shown < st.partResults.length) {
+  if (st.shown < units.length) {
+    const left = units.length - st.shown;
     more.innerHTML = `<button class="btn btn--sm" type="button" id="loadMore">
-      Load ${Math.min(PAGE_SIZE, st.partResults.length - st.shown)} more
-      <span class="muted">(${st.partResults.length - st.shown} left)</span></button>`;
+      Load ${Math.min(PAGE_SIZE, left)} more
+      <span class="muted">(${left} left)</span></button>`;
     $("#loadMore").onclick = () => renderPartList(true);
     observer = new IntersectionObserver((entries) => {
       if (entries.some((e) => e.isIntersecting)) renderPartList(true);
@@ -588,6 +745,35 @@ function renderPartList(append = false) {
   } else {
     more.innerHTML = "";
   }
+}
+
+/* One delegated handler for the whole list: expand/collapse a family, apply a
+   bulk location, or open a single part. */
+function onPartListClick(e) {
+  const act = e.target.closest("[data-act]");
+  if (act) {
+    const wrap = act.closest(".pgroup");
+    const key = wrap?.dataset.key;
+    if (act.dataset.act === "toggle") {
+      const open = !st.openGroups.has(key);
+      if (open) st.openGroups.add(key); else st.openGroups.delete(key);
+      const g = st.groups.find((x) => x.key === key);
+      const body = wrap.querySelector(".pgroup__body");
+      if (open && !body.childElementCount) {
+        body.innerHTML = g.idxs.map((i) => partRowHtml(store.parts[i])).join("");
+      }
+      body.hidden = !open;
+      act.setAttribute("aria-expanded", String(open));
+      wrap.querySelector(".pgroup__chev")?.classList.toggle("is-open", open);
+      return;
+    }
+    if (act.dataset.act === "applyloc") {
+      const input = wrap.querySelector('[data-role="loc"]');
+      applyGroupLocation(key, input.value.trim(), act);
+      return;
+    }
+  }
+  onPartRowClick(e);
 }
 
 function onPartRowClick(e) {
