@@ -189,6 +189,7 @@ export const ping = () => apiGet("ping");
 export const getCatalog = (since) => apiGet("catalog", { since });
 export const getPart = (id) => apiGet("part", { id });
 
+export const board = (limit = 200) => apiGet("board", { limit });
 export const submitRequest = (payload) => apiPost({ action: "submit", ...payload });
 export const myRequests = (name, teamNumber) =>
   apiPost({ action: "myRequests", name, teamNumber });

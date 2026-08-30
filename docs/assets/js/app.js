@@ -12,7 +12,7 @@
 import * as api from "./api.js";
 import { store, loadCatalog, loadCategories, search, categoryBySlug, imageFor,
          getPartLocal } from "./store.js";
-import { SITE_TITLE, PAGE_SIZE, SEARCH_DEBOUNCE, COMBO_LIMIT } from "./config.js";
+import { SITE_TITLE, PAGE_SIZE, SEARCH_DEBOUNCE, COMBO_LIMIT, TEAMS, teamLabel } from "./config.js";
 
 /* -------------------------------------------------------------------------- */
 /* tiny helpers                                                                */
@@ -764,7 +764,7 @@ function validate(v, picked, type) {
   else if (v.name.length > 80) e.name = "That is longer than 80 characters.";
 
   if (!v.teamNumber) e.teamNumber = "Which team are you on?";
-  else if (v.teamNumber.length > 12) e.teamNumber = "Team numbers are 12 characters or fewer.";
+  else if (!TEAMS.some((t) => t.number === v.teamNumber)) e.teamNumber = "Pick one of the four teams.";
 
   if (!picked) e.part = "Pick a part from the list.";
 
@@ -816,8 +816,12 @@ function openRequest({ part = null } = {}) {
           </div>
           <div class="field">
             <label for="f-team">Team number</label>
-            <input class="input mono" id="f-team" name="teamNumber" maxlength="12"
-                   inputmode="numeric" value="${esc(me.teamNumber || "")}">
+            <select class="input" id="f-team" name="teamNumber">
+              <option value="">Choose your team</option>
+              ${TEAMS.map((t) => `<option value="${esc(t.number)}"${
+                String(me.teamNumber || "") === t.number ? " selected" : ""
+              }>${esc(t.name)} ${esc(t.number)}</option>`).join("")}
+            </select>
             <p class="err" id="e-team"></p>
           </div>
         </div>
@@ -1083,6 +1087,154 @@ function showConfirmation(requestId, part, quantity, type) {
     </div>`);
 }
 
+
+/* ==========================================================================
+   Activity board -- public, read-only: who has what and where it stands.
+
+   Status is derived from (type, status) rather than stored, because a loan is
+   two rows: the checkout and, later, its return. What a reader cares about is
+   the state of the loan, not which row they happen to be looking at.
+   ========================================================================== */
+
+const BOARD_STATES = {
+  pending:   { cls: "st--pending",   label: "Waiting for approval" },
+  out:       { cls: "st--out",       label: "Out on loan" },
+  returning: { cls: "st--returning", label: "Return awaiting approval" },
+  denied:    { cls: "st--denied",    label: "Denied" },
+  done:      { cls: "st--done",      label: "Returned" },
+  cancelled: { cls: "st--pending",   label: "Cancelled" },
+};
+
+function boardStateOf(r) {
+  if (r.status === "denied") return "denied";
+  if (r.status === "cancelled") return "cancelled";
+  if (r.type === "return") return r.status === "pending" ? "returning" : "done";
+  if (r.status === "approved") return "out";
+  if (r.status === "returned") return "done";
+  return "pending";
+}
+
+const boardState = { rows: [], team: "", loaded: false };
+
+function boardCategoryOf(r) {
+  const p = store.byId?.get(r.partId);
+  return (p && p.category) || "Other";
+}
+
+function renderBoard() {
+  const body = $("#boardBody");
+  const rows = boardState.team
+    ? boardState.rows.filter((r) => String(r.teamNumber) === boardState.team)
+    : boardState.rows;
+
+  const tally = { pending: 0, out: 0, returning: 0, denied: 0, done: 0, cancelled: 0 };
+  for (const r of rows) tally[boardStateOf(r)] += 1;
+  $("#boardMetrics").innerHTML = `
+    <div class="metric"><dt>Waiting</dt><dd>${tally.pending + tally.returning}</dd></div>
+    <div class="metric"><dt>Out on loan</dt><dd>${tally.out}</dd></div>
+    <div class="metric"><dt>Closed</dt><dd>${tally.done}</dd></div>
+    <div class="metric"><dt>Denied</dt><dd>${tally.denied}</dd></div>`;
+
+  if (!rows.length) {
+    body.innerHTML = `
+      <div class="empty">
+        <div class="empty__title">${boardState.team ? "Nothing from that team yet" : "No requests yet"}</div>
+        <p>${boardState.team
+          ? "Try another team, or clear the filter."
+          : "The first checkout request will show up here."}</p>
+      </div>`;
+    return;
+  }
+
+  const groups = new Map();
+  for (const r of rows) {
+    const c = boardCategoryOf(r);
+    if (!groups.has(c)) groups.set(c, []);
+    groups.get(c).push(r);
+  }
+  const today = new Date().toISOString().slice(0, 10);
+
+  body.innerHTML = [...groups.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([cat, list]) => `
+      <section class="bgroup">
+        <div class="bgroup__head">
+          <h2>${esc(cat)}</h2>
+          <span class="bgroup__count">${list.length} request${list.length === 1 ? "" : "s"}</span>
+        </div>
+        ${list.map((r) => {
+          const st = boardStateOf(r);
+          const meta = BOARD_STATES[st];
+          const overdue = st === "out" && r.returnDate && r.returnDate < today;
+          return `
+          <div class="brow${overdue ? " is-overdue" : ""}">
+            <span class="brow__bar ${meta.cls}"></span>
+            <span class="brow__part">
+              <span class="brow__name">${esc(r.partName || r.partId)}</span>
+              <span class="brow__sku">${esc(r.sku || "")}</span>
+            </span>
+            <span class="brow__who">
+              <b>${esc(r.name)}</b>
+              <span class="brow__team">${esc(teamLabel(r.teamNumber))}</span>
+            </span>
+            <span class="brow__qty">x${r.quantity}</span>
+            <span class="brow__status">
+              <span class="dot ${meta.cls}"></span>
+              <span>${esc(meta.label)}
+                <span class="brow__when">${overdue
+                  ? `due ${esc(r.returnDate)} &middot; overdue`
+                  : r.returnDate ? `due ${esc(r.returnDate)}` : esc(r.checkoutDate || "")}</span>
+              </span>
+            </span>
+          </div>`;
+        }).join("")}
+      </section>`).join("");
+}
+
+async function loadBoard(force = false) {
+  if (boardState.loaded && !force) return;
+  const body = $("#boardBody");
+  body.innerHTML = Array.from({ length: 4 }, () =>
+    `<div class="sk" style="height:52px;border-radius:var(--r-md);margin-bottom:8px"></div>`).join("");
+  try {
+    const data = await api.board(200);
+    boardState.rows = data.requests || [];
+    boardState.loaded = true;
+    renderBoard();
+  } catch (e) {
+    body.innerHTML = `
+      <div class="empty">
+        <div class="empty__title">Could not load the board</div>
+        <p>${esc(e.message)}</p>
+        <button class="btn btn--sm" type="button" id="boardRetry">Try again</button>
+      </div>`;
+    $("#boardRetry").onclick = () => loadBoard(true);
+  }
+}
+
+function showView(which) {
+  const onBoard = which === "board";
+  $("#board").hidden = !onBoard;
+  document.querySelector(".shell").hidden = onBoard;
+  $("#tabBoard").classList.toggle("is-on", onBoard);
+  $("#tabCatalogue").classList.toggle("is-on", !onBoard);
+  $("#tabBoard").setAttribute("aria-current", onBoard ? "page" : "false");
+  $("#tabCatalogue").setAttribute("aria-current", onBoard ? "false" : "page");
+  $("#searchWrap").hidden = onBoard;
+  if (onBoard) loadBoard();
+}
+
+function wireBoard() {
+  const sel = $("#boardTeam");
+  sel.innerHTML = `<option value="">All teams</option>` +
+    TEAMS.map((t) => `<option value="${esc(t.number)}">${esc(t.name)} ${esc(t.number)}</option>`).join("");
+  sel.addEventListener("change", () => { boardState.team = sel.value; renderBoard(); });
+  $("#boardRefresh").addEventListener("click", () => loadBoard(true));
+  $("#tabBoard").addEventListener("click", () => { location.hash = "#/activity"; showView("board"); });
+  $("#tabCatalogue").addEventListener("click", () => { location.hash = "#/"; showView("catalogue"); });
+  if (location.hash.startsWith("#/activity")) showView("board");
+}
+
 /* -------------------------------------------------------------------------- */
 /* boot                                                                        */
 /* -------------------------------------------------------------------------- */
@@ -1146,6 +1298,8 @@ async function boot() {
   applyRoute();
 
   /* ---- 4. wiring ---- */
+  wireBoard();
+
   const input = $("#q");
   const onType = debounce(() => {
     state.query = input.value.trim();

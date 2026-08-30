@@ -48,6 +48,11 @@
     </button>
   </div>
 
+  <nav class="viewtabs" aria-label="Sections">
+    <button class="viewtab is-on" id="tabCatalogue" type="button" aria-current="page">Catalogue</button>
+    <button class="viewtab" id="tabBoard" type="button">Activity</button>
+  </nav>
+
   <div class="topbar__right">
     <button class="btn btn--sm btn--ghost only-mobile" id="catsBtn" type="button" aria-expanded="false" aria-controls="sidebar">
       <svg class="icon"><use href="#i-list"/></svg>
@@ -90,6 +95,33 @@
     <div id="gridState"></div>
   </main>
 </div>
+
+<section class="board" id="board" hidden aria-label="Activity board">
+  <div class="board__head">
+    <div>
+      <h1>Who has what</h1>
+      <p class="board__sub">Every checkout and return, newest first. Grouped by category.</p>
+    </div>
+    <div class="board__filters">
+      <label class="u-sr" for="boardTeam">Filter by team</label>
+      <select class="input" id="boardTeam">
+        <option value="">All teams</option>
+      </select>
+      <button class="btn btn--sm" id="boardRefresh" type="button">Refresh</button>
+    </div>
+  </div>
+
+  <ul class="legend" id="boardLegend">
+    <li><span class="dot st--pending"></span>Waiting for approval</li>
+    <li><span class="dot st--out"></span>Approved &middot; out on loan</li>
+    <li><span class="dot st--returning"></span>Return awaiting approval</li>
+    <li><span class="dot st--denied"></span>Denied</li>
+    <li><span class="dot st--done"></span>Returned &middot; closed</li>
+  </ul>
+
+  <dl class="metrics" id="boardMetrics"></dl>
+  <div id="boardBody"></div>
+</section>
 
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 

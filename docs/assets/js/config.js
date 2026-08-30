@@ -34,3 +34,18 @@ export const IMAGE_QUALITY = 0.85;
 
 /* Network timeout in ms. Apps Script cold starts are slow but not this slow. */
 export const REQUEST_TIMEOUT = 20000;
+
+/* The four teams in the lab. The request form and the activity board both read
+   this, so adding a team is a one-line change here. `number` is what gets
+   stored in the Sheet; `name` is only ever shown. */
+export const TEAMS = [
+  { number: "26588", name: "Midnight" },
+  { number: "4997",  name: "Masquerade" },
+  { number: "1386",  name: "Maelstrom" },
+  { number: "1369",  name: "Mythos" },
+];
+
+export const teamLabel = (n) => {
+  const t = TEAMS.find((x) => x.number === String(n || "").trim());
+  return t ? `${t.name} ${t.number}` : (n ? String(n) : "Unknown team");
+};

@@ -487,3 +487,97 @@ body {
   .btn__text { display: none; }
   .btn--responsive { min-width: 44px; padding: 0 12px; }
 }
+
+/* --- Activity board -------------------------------------------------------
+   The one place in the app that uses hues outside the grey/red system. Status
+   here is the entire message, it is read across a noisy room at a glance, and
+   the colours were specified by the team: white waiting, yellow out, orange
+   returning, red denied, green closed. Every swatch is also carried by a text
+   label, so the board still reads correctly for a colour-blind user or in
+   greyscale -- colour is the accelerant, never the only signal. */
+.viewtabs {
+  display: flex; gap: 2px; padding: 3px;
+  background: var(--bg-sunken); border: 1px solid var(--line);
+  border-radius: var(--r-md); margin-left: var(--s3);
+}
+.viewtab {
+  min-height: 32px; padding: 0 var(--s3);
+  border: 0; border-radius: var(--r-sm); background: transparent;
+  color: var(--text-3); font-size: var(--t-sm); font-weight: 560;
+  font-family: inherit; cursor: pointer; white-space: nowrap;
+}
+.viewtab:hover { color: var(--text-2); }
+.viewtab.is-on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-1); }
+.viewtab:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.board { padding: var(--s5); max-width: 1200px; margin: 0 auto; }
+.board[hidden] { display: none; }
+.board__head {
+  display: flex; align-items: flex-end; gap: var(--s4);
+  flex-wrap: wrap; margin-bottom: var(--s4);
+}
+.board__head h1 { margin: 0 0 4px; }
+.board__sub { margin: 0; color: var(--text-3); font-size: var(--t-sm); }
+.board__filters { display: flex; gap: var(--s3); margin-left: auto; align-items: center; }
+.board__filters .input { min-width: 190px; }
+
+.legend {
+  display: flex; flex-wrap: wrap; gap: var(--s3) var(--s4);
+  list-style: none; margin: 0 0 var(--s4); padding: 0;
+  font-size: var(--t-xs); color: var(--text-3);
+}
+.legend li { display: inline-flex; align-items: center; gap: 7px; }
+.dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 1px solid rgba(0,0,0,.28); flex: 0 0 auto;
+}
+
+/* status hues -- deliberately outside the grey/red palette, see note above */
+.st--pending   { background: #f4f4f5; }
+.st--out       { background: #f2c94c; }
+.st--returning { background: #ef8b3f; }
+.st--denied    { background: #e04b4b; }
+.st--done      { background: #4caf72; }
+
+.bgroup { margin-bottom: var(--s5); }
+.bgroup__head {
+  display: flex; align-items: baseline; gap: var(--s3);
+  padding-bottom: 6px; margin-bottom: var(--s3);
+  border-bottom: 1px solid var(--line-soft);
+}
+.bgroup__head h2 { margin: 0; font-size: var(--t-md); }
+.bgroup__count { color: var(--text-3); font-size: var(--t-xs); font-family: var(--font-mono); }
+
+.brow {
+  display: grid;
+  grid-template-columns: 4px minmax(0,2.2fr) minmax(0,1.2fr) auto auto;
+  align-items: center; gap: var(--s3);
+  padding: 10px var(--s3) 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.brow:last-child { border-bottom: 0; }
+.brow__bar { width: 4px; height: 34px; border-radius: 2px; }
+.brow__part { min-width: 0; }
+.brow__name { display: block; font-weight: 560; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brow__sku { display: block; font-family: var(--font-mono); font-size: var(--t-xs); color: var(--text-3); }
+.brow__who { min-width: 0; font-size: var(--t-sm); }
+.brow__who b { display: block; font-weight: 560; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brow__team { color: var(--text-3); font-size: var(--t-xs); }
+.brow__qty { font-family: var(--font-mono); font-size: var(--t-sm); color: var(--text-2); white-space: nowrap; }
+.brow__status {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: var(--t-xs); color: var(--text-2); white-space: nowrap;
+  justify-self: end; text-align: right;
+}
+.brow__when { display: block; color: var(--text-3); font-size: 11px; }
+.brow.is-overdue .brow__when { color: var(--accent-hot); font-weight: 560; }
+
+@media (max-width: 720px) {
+  .board { padding: var(--s4) var(--s3); }
+  .brow { grid-template-columns: 4px minmax(0,1fr) auto; row-gap: 4px; }
+  .brow__who { grid-column: 2 / -1; }
+  .brow__qty { display: none; }
+  .board__filters { margin-left: 0; width: 100%; }
+  .board__filters .input { flex: 1; min-width: 0; }
+  .viewtabs { order: 3; width: 100%; margin-left: 0; }
+}

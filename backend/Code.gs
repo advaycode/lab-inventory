@@ -11,7 +11,7 @@
 // Constants
 // ---------------------------------------------------------------------------
 
-var SCRIPT_VERSION = '1.1.0-bulkloc';  // bump on every deploy so ?action=ping proves which code is live
+var SCRIPT_VERSION = '1.2.0-board';  // bump on every deploy so ?action=ping proves which code is live
 
 var PARTS_HEADERS = ['PartID', 'SKU', 'Name', 'Category', 'Subcategory', 'ImageURL',
   'LocalImage', 'ProductURL', 'Description', 'Location', 'QtyTotal', 'QtyOut',
@@ -47,6 +47,8 @@ function doGet(e) {
       result = catalogAction(e.parameter.since);
     } else if (action === 'part') {
       result = partAction(e.parameter.id);
+    } else if (action === 'board') {
+      result = boardAction(e.parameter.limit);
     } else {
       result = fail('BAD_ACTION', 'Unknown action: ' + action);
     }
@@ -134,6 +136,53 @@ function catalogAction(since) {
   var str = JSON.stringify(dataObj);
   cacheSetChunked(cacheKey, str, CACHE_TTL_SECONDS);
   return ok(dataObj);
+}
+
+/**
+ * Public activity board: who has what, and where each request stands.
+ *
+ * PUBLIC AND UNAUTHENTICATED by design -- the whole team is meant to see it.
+ * It therefore returns only what a teammate needs to read the board and
+ * deliberately withholds the free-text fields, which are where people write
+ * things they did not expect strangers to read: UserNote and AdminNote are
+ * never included. Newest first, capped, and cached for a minute so a room
+ * full of phones refreshing does not hammer the sheet.
+ */
+function boardAction(limitRaw) {
+  var limit = coerceInt(limitRaw, 1, 500, 200);
+  var cache = CacheService.getScriptCache();
+  var key = 'board_' + limit;
+  var hit = cache.get(key);
+  if (hit) {
+    try { return ok(JSON.parse(hit)); } catch (e) { /* rebuild below */ }
+  }
+
+  var rows = readSheetAsObjects(sh('Requests'), REQUESTS_HEADERS);
+  var out = [];
+  for (var i = rows.length - 1; i >= 0 && out.length < limit; i--) {
+    var r = rows[i];
+    if (!r.RequestID) continue;
+    out.push({
+      requestId: String(r.RequestID),
+      createdAt: asIsoStr(r.CreatedAt),
+      type: String(r.Type || ''),
+      name: String(r.Name || ''),
+      teamNumber: String(r.TeamNumber || ''),
+      partId: String(r.PartID || ''),
+      sku: String(r.SKU || ''),
+      partName: String(r.PartName || ''),
+      quantity: coerceInt(r.Quantity, 0, 999999, 0),
+      checkoutDate: asDateStr(r.CheckoutDate),
+      returnDate: asDateStr(r.ReturnDate),
+      status: String(r.Status || ''),
+      decidedAt: r.DecidedAt ? asIsoStr(r.DecidedAt) : '',
+      linkedRequestId: String(r.LinkedRequestID || '')
+    });
+  }
+
+  var data = { requests: out, total: rows.length };
+  try { cache.put(key, JSON.stringify(data), 60); } catch (e) { /* oversized: skip cache */ }
+  return ok(data);
 }
 
 function partAction(id) {
