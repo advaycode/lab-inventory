@@ -10,7 +10,7 @@
    by design. No password, no token, no key.
    ========================================================================== */
 
-export const API_URL = "";
+export const API_URL = "https://script.google.com/macros/s/AKfycbzrQRE34sU7GJ497-nheHgb8_zQVW8q9CJQ2lq1Yf-a0SWN2TKbRlxy7nFFUQcxDhfDEA/exec";
 
 /* Cosmetic + local data paths. Rarely need changing. */
 export const SITE_TITLE = "Lab Inventory";

@@ -815,7 +815,15 @@ function openEditor(part) {
         save.textContent = "Uploading photo...";
         try {
           const up = await api.uploadImage(saved.partId, staged.filename, staged.mimeType, staged.base64);
-          if (up?.imageUrl) saved = upsertPartLocal({ ...saved, imageUrl: up.imageUrl, localImage: "" });
+          if (up?.imageUrl) {
+            // uploadImage only drops the file in Drive and hands back a URL — it
+            // does not touch the Parts row. Without this second write the photo
+            // would live only in this tab: gone on refresh, never seen by users.
+            const persisted = await api.upsertPart({
+              partId: saved.partId, imageUrl: up.imageUrl, localImage: ""
+            });
+            saved = upsertPartLocal(persisted.part || { ...saved, imageUrl: up.imageUrl, localImage: "" });
+          }
         } catch (ex) {
           toast(`Part saved, but the photo did not upload: ${ex.message}`, "err", 8000);
         }
