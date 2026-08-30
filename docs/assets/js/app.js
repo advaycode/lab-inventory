@@ -12,7 +12,7 @@
 import * as api from "./api.js";
 import { store, loadCatalog, loadCategories, search, categoryBySlug, imageFor,
          getPartLocal } from "./store.js";
-import { SITE_TITLE, TEAM_LABEL, PAGE_SIZE, SEARCH_DEBOUNCE, COMBO_LIMIT } from "./config.js";
+import { SITE_TITLE, PAGE_SIZE, SEARCH_DEBOUNCE, COMBO_LIMIT } from "./config.js";
 
 /* -------------------------------------------------------------------------- */
 /* tiny helpers                                                                */
@@ -1090,7 +1090,6 @@ function showConfirmation(requestId, part, quantity, type) {
 async function boot() {
   initTheme();
   document.title = SITE_TITLE;
-  $("#brandTeam").textContent = TEAM_LABEL;
   showSkeleton();
 
   grid = createGrid($("#grid"), (p) => openDetail(p));

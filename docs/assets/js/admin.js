@@ -12,7 +12,8 @@
 import * as api from "./api.js";
 import { store, loadCatalog, loadCategories, search, imageFor,
          upsertPartLocal, removePartLocal, applyDecisionLocal, getPartLocal } from "./store.js";
-import { SITE_TITLE, PAGE_SIZE, SEARCH_DEBOUNCE, IMAGE_MAX_PX, IMAGE_QUALITY } from "./config.js";
+import { SITE_TITLE, PAGE_SIZE, SEARCH_DEBOUNCE, IMAGE_MAX_PX, IMAGE_QUALITY,
+         PREVIEW_ADMIN_SHA256 } from "./config.js";
 
 /* -------------------------------------------------------------------------- */
 /* helpers                                                                     */
@@ -23,6 +24,16 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const icon = (id, cls = "icon") => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
+
+/* Preview mode: the backend does not exist yet (API_URL is empty), so the shell
+   is shown read-only behind a courtesy password. Nothing here is security --
+   see the note on PREVIEW_ADMIN_SHA256 in config.js. */
+let previewMode = false;
+
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 function debounce(fn, ms) {
   let t = 0;
@@ -128,7 +139,21 @@ function wireGate() {
       return;
     }
     if (!api.hasApi()) {
-      err.textContent = "API_URL is empty in assets/js/config.js, so there is nothing to sign in to.";
+      btn.disabled = true;
+      btn.textContent = "Checking...";
+      let match = false;
+      try { match = (await sha256Hex(password)) === PREVIEW_ADMIN_SHA256; } catch { match = false; }
+      btn.disabled = false;
+      btn.textContent = "Sign in";
+      if (!match) {
+        err.textContent = "That password did not work.";
+        pw.setAttribute("aria-invalid", "true");
+        pw.select();
+        return;
+      }
+      previewMode = true;
+      pw.value = "";
+      await mountShell();
       return;
     }
     btn.disabled = true;
@@ -196,9 +221,10 @@ async function mountShell() {
   });
 
   window.__adminReady = true;
+  if (previewMode) showPreviewBanner();
   // Both are needed before the queue can show shelf counts, and they race:
   // whichever finishes second triggers the render that has all the facts.
-  await Promise.all([loadQueue(), loadCatalogOnce()]);
+  await Promise.all([previewMode ? Promise.resolve() : loadQueue(), loadCatalogOnce()]);
   renderQueue();
   selectTab(location.hash.replace("#", "") || "queue");
 }
@@ -244,8 +270,30 @@ async function loadCatalogOnce() {
 /* queue                                                                       */
 /* -------------------------------------------------------------------------- */
 
+function showPreviewBanner() {
+  if ($("#previewNote")) return;
+  const el = document.createElement("div");
+  el.id = "previewNote";
+  el.className = "banner";
+  el.innerHTML =
+    "<strong>Preview mode.</strong> No backend is connected, so there are no real " +
+    "requests to approve and nothing you change here is saved. Deploy the Apps " +
+    "Script backend and set API_URL to switch this on.";
+  const shell = $("#adminShell");
+  shell.insertBefore(el, shell.firstChild.nextSibling);
+}
+
 async function loadQueue(manual = false) {
   const box = $("#queue");
+  if (previewMode) {
+    st.queue = [];
+    box.innerHTML = `
+      <div class="empty">
+        <div class="empty__title">No queue yet</div>
+        <p>Check-out and return requests will appear here once the backend is connected.</p>
+      </div>`;
+    return;
+  }
   if (manual || !st.queue.length) {
     box.innerHTML = Array.from({ length: 3 }, () =>
       `<div class="sk" style="height:118px;border-radius:var(--r-md)"></div>`).join("");
@@ -818,6 +866,17 @@ async function loadStats() {
   const m = $("#statMetrics");
   const od = $("#overdue");
   m.innerHTML = `<div class="metric"><dt>Loading</dt><dd class="sk" style="height:26px;width:60px"></dd></div>`;
+  if (previewMode) {
+    const parts = [...store.parts.values()];
+    m.innerHTML = `
+      <div class="metric"><dt>Parts tracked</dt><dd>${parts.length}</dd></div>
+      <div class="metric"><dt>Units owned</dt><dd>${parts.reduce((a, p) => a + (p.qtyTotal || 0), 0)}</dd></div>
+      <div class="metric"><dt>Units out</dt><dd>0</dd></div>
+      <div class="metric"><dt>Pending</dt><dd>0</dd></div>`;
+    od.innerHTML = `<div class="empty"><div class="empty__title">Nothing is overdue</div>
+      <p>Nothing can be checked out until the backend is connected.</p></div>`;
+    return;
+  }
   try {
     const s = await api.stats();
     m.innerHTML = `

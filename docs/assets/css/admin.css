@@ -1,3 +1,22 @@
+/* --- ADMIN ribbon ---------------------------------------------------------
+   A permanent, unmissable marker that this is the admin surface, not the
+   student one. Sticky so it survives scrolling; the header sits below it. */
+:root { --admin-ribbon-h: 22px; }
+
+.aribbon {
+  position: sticky; top: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  height: var(--admin-ribbon-h);
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .28em; text-transform: uppercase;
+  text-indent: .28em;               /* optically centre the tracked text */
+  user-select: none;
+}
+@media (prefers-contrast: more) { .aribbon { outline: 1px solid #fff; } }
+
 /* ============================================================================
    LabInventory - admin.css
 
@@ -7,8 +26,12 @@
 
 /* ============================== login ==================================== */
 
+/* `display:grid` below outranks the UA default [hidden]{display:none}, so the
+   sign-in card would keep occupying the page after login without this. */
+.gate[hidden] { display: none; }
+
 .gate {
-  min-height: calc(100dvh - var(--credit-strip));
+  min-height: calc(100dvh - var(--credit-strip) - var(--admin-ribbon-h));
   display: grid;
   place-items: center;
   padding: var(--s5) var(--s5) calc(var(--s5) + var(--credit-strip));
@@ -38,7 +61,7 @@
 /* ============================== shell ==================================== */
 
 .abar {
-  position: sticky; top: 0; z-index: var(--z-sticky);
+  position: sticky; top: var(--admin-ribbon-h); z-index: var(--z-sticky);
   display: flex; align-items: center; gap: var(--s4);
   height: var(--header-h); padding: 0 var(--s4);
   background: var(--bg); border-bottom: 1px solid var(--line-soft);

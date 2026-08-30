@@ -14,7 +14,6 @@ export const API_URL = "";
 
 /* Cosmetic + local data paths. Rarely need changing. */
 export const SITE_TITLE = "Lab Inventory";
-export const TEAM_LABEL = "Masquerade 4997";
 
 export const CATALOG_URL = "data/catalog.json";
 export const CATEGORIES_URL = "data/categories.json";
