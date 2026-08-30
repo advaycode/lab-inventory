@@ -1,0 +1,544 @@
+{
+ "generatedAt": "2026-08-30T15:25:51Z",
+ "categories": [
+  {
+   "catId": "structure",
+   "name": "STRUCTURE",
+   "parent": "",
+   "slug": "structure",
+   "sortOrder": 0
+  },
+  {
+   "catId": "channel",
+   "name": "Channel",
+   "parent": "structure",
+   "slug": "channel",
+   "sortOrder": 1
+  },
+  {
+   "catId": "beams",
+   "name": "Beams",
+   "parent": "structure",
+   "slug": "beams",
+   "sortOrder": 3
+  },
+  {
+   "catId": "shafting-tubing-1",
+   "name": "Shafting & Tubing",
+   "parent": "structure",
+   "slug": "shafting-tubing-1",
+   "sortOrder": 4
+  },
+  {
+   "catId": "mounts",
+   "name": "Mounts",
+   "parent": "structure",
+   "slug": "mounts",
+   "sortOrder": 5
+  },
+  {
+   "catId": "grid-plates",
+   "name": "Grid Plates",
+   "parent": "structure",
+   "slug": "grid-plates",
+   "sortOrder": 7
+  },
+  {
+   "catId": "pattern-plates",
+   "name": "Pattern Plates",
+   "parent": "structure",
+   "slug": "pattern-plates",
+   "sortOrder": 8
+  },
+  {
+   "catId": "brackets",
+   "name": "Brackets",
+   "parent": "structure",
+   "slug": "brackets",
+   "sortOrder": 9
+  },
+  {
+   "catId": "pattern-adaptors",
+   "name": "Pattern Adaptors",
+   "parent": "structure",
+   "slug": "pattern-adaptors",
+   "sortOrder": 11
+  },
+  {
+   "catId": "standoffs-spacers",
+   "name": "Standoffs & Spacers",
+   "parent": "structure",
+   "slug": "standoffs-spacers",
+   "sortOrder": 13
+  },
+  {
+   "catId": "threaded-plates-1",
+   "name": "Threaded Plates",
+   "parent": "structure",
+   "slug": "threaded-plates-1",
+   "sortOrder": 14
+  },
+  {
+   "catId": "hinges-1",
+   "name": "Hinges",
+   "parent": "structure",
+   "slug": "hinges-1",
+   "sortOrder": 15
+  },
+  {
+   "catId": "structure-bundles",
+   "name": "Structure Bundles",
+   "parent": "structure",
+   "slug": "structure-bundles",
+   "sortOrder": 16
+  },
+  {
+   "catId": "motion",
+   "name": "MOTION",
+   "parent": "",
+   "slug": "motion",
+   "sortOrder": 17
+  },
+  {
+   "catId": "motors",
+   "name": "Motors",
+   "parent": "motion",
+   "slug": "motors",
+   "sortOrder": 18
+  },
+  {
+   "catId": "servos",
+   "name": "Servos",
+   "parent": "motion",
+   "slug": "servos",
+   "sortOrder": 19
+  },
+  {
+   "catId": "wheels-tires",
+   "name": "Wheels & Tires",
+   "parent": "motion",
+   "slug": "wheels-tires",
+   "sortOrder": 21
+  },
+  {
+   "catId": "tracks",
+   "name": "Tracks",
+   "parent": "motion",
+   "slug": "tracks",
+   "sortOrder": 23
+  },
+  {
+   "catId": "gears",
+   "name": "Gears",
+   "parent": "motion",
+   "slug": "gears",
+   "sortOrder": 24
+  },
+  {
+   "catId": "sprockets-chain",
+   "name": "Sprockets & Chain",
+   "parent": "motion",
+   "slug": "sprockets-chain",
+   "sortOrder": 25
+  },
+  {
+   "catId": "timing-belts-pulleys",
+   "name": "Timing Belts & Pulleys",
+   "parent": "motion",
+   "slug": "timing-belts-pulleys",
+   "sortOrder": 26
+  },
+  {
+   "catId": "round-belts-pulleys",
+   "name": "Round Belts & Pulleys",
+   "parent": "motion",
+   "slug": "round-belts-pulleys",
+   "sortOrder": 27
+  },
+  {
+   "catId": "cable-pulleys",
+   "name": "Cable & Pulleys",
+   "parent": "motion",
+   "slug": "cable-pulleys",
+   "sortOrder": 28
+  },
+  {
+   "catId": "lead-screws",
+   "name": "Lead Screws",
+   "parent": "motion",
+   "slug": "lead-screws",
+   "sortOrder": 29
+  },
+  {
+   "catId": "linear-slides",
+   "name": "Linear Slides",
+   "parent": "motion",
+   "slug": "linear-slides",
+   "sortOrder": 30
+  },
+  {
+   "catId": "linear-motion-guides",
+   "name": "Linear Motion Guides",
+   "parent": "motion",
+   "slug": "linear-motion-guides",
+   "sortOrder": 31
+  },
+  {
+   "catId": "hubs",
+   "name": "Hubs",
+   "parent": "motion",
+   "slug": "hubs",
+   "sortOrder": 32
+  },
+  {
+   "catId": "bearings",
+   "name": "Bearings",
+   "parent": "motion",
+   "slug": "bearings",
+   "sortOrder": 33
+  },
+  {
+   "catId": "shafting-tubing",
+   "name": "Shafting & Tubing",
+   "parent": "motion",
+   "slug": "shafting-tubing",
+   "sortOrder": 34
+  },
+  {
+   "catId": "standoffs-spacers-1",
+   "name": "Standoffs & Spacers",
+   "parent": "motion",
+   "slug": "standoffs-spacers-1",
+   "sortOrder": 35
+  },
+  {
+   "catId": "collars",
+   "name": "Collars",
+   "parent": "motion",
+   "slug": "collars",
+   "sortOrder": 37
+  },
+  {
+   "catId": "couplers",
+   "name": "Couplers",
+   "parent": "motion",
+   "slug": "couplers",
+   "sortOrder": 38
+  },
+  {
+   "catId": "cv-universal-joints",
+   "name": "CV & Universal Joints",
+   "parent": "motion",
+   "slug": "cv-universal-joints",
+   "sortOrder": 39
+  },
+  {
+   "catId": "shocks",
+   "name": "Shocks",
+   "parent": "motion",
+   "slug": "shocks",
+   "sortOrder": 40
+  },
+  {
+   "catId": "control-arms",
+   "name": "Control-Arms",
+   "parent": "motion",
+   "slug": "control-arms",
+   "sortOrder": 41
+  },
+  {
+   "catId": "linkages-threaded-rods",
+   "name": "Linkages & Threaded Rods",
+   "parent": "motion",
+   "slug": "linkages-threaded-rods",
+   "sortOrder": 42
+  },
+  {
+   "catId": "hinges-2",
+   "name": "Hinges",
+   "parent": "motion",
+   "slug": "hinges-2",
+   "sortOrder": 43
+  },
+  {
+   "catId": "motion-bundles",
+   "name": "Motion Bundles",
+   "parent": "motion",
+   "slug": "motion-bundles",
+   "sortOrder": 44
+  },
+  {
+   "catId": "electronics",
+   "name": "ELECTRONICS",
+   "parent": "",
+   "slug": "electronics",
+   "sortOrder": 45
+  },
+  {
+   "catId": "control-bundles",
+   "name": "Control Bundles",
+   "parent": "electronics",
+   "slug": "control-bundles",
+   "sortOrder": 48
+  },
+  {
+   "catId": "sensors",
+   "name": "Sensors",
+   "parent": "electronics",
+   "slug": "sensors",
+   "sortOrder": 49
+  },
+  {
+   "catId": "cameras",
+   "name": "Cameras",
+   "parent": "electronics",
+   "slug": "cameras",
+   "sortOrder": 50
+  },
+  {
+   "catId": "odometry",
+   "name": "Odometry",
+   "parent": "electronics",
+   "slug": "odometry",
+   "sortOrder": 51
+  },
+  {
+   "catId": "transmitters-receivers",
+   "name": "Transmitters & Receivers",
+   "parent": "electronics",
+   "slug": "transmitters-receivers",
+   "sortOrder": 52
+  },
+  {
+   "catId": "signal-mixers",
+   "name": "Signal Mixers",
+   "parent": "electronics",
+   "slug": "signal-mixers",
+   "sortOrder": 53
+  },
+  {
+   "catId": "batteries",
+   "name": "Batteries",
+   "parent": "electronics",
+   "slug": "batteries",
+   "sortOrder": 54
+  },
+  {
+   "catId": "voltage-regulators-becs",
+   "name": "Voltage Regulators (BECs)",
+   "parent": "electronics",
+   "slug": "voltage-regulators-becs",
+   "sortOrder": 55
+  },
+  {
+   "catId": "power-distribution-boards",
+   "name": "Power Distribution Boards",
+   "parent": "electronics",
+   "slug": "power-distribution-boards",
+   "sortOrder": 56
+  },
+  {
+   "catId": "wiring",
+   "name": "Wiring",
+   "parent": "electronics",
+   "slug": "wiring",
+   "sortOrder": 57
+  },
+  {
+   "catId": "switches",
+   "name": "Switches",
+   "parent": "electronics",
+   "slug": "switches",
+   "sortOrder": 58
+  },
+  {
+   "catId": "lights",
+   "name": "Lights",
+   "parent": "electronics",
+   "slug": "lights",
+   "sortOrder": 59
+  },
+  {
+   "catId": "fuses",
+   "name": "Fuses",
+   "parent": "electronics",
+   "slug": "fuses",
+   "sortOrder": 60
+  },
+  {
+   "catId": "hardware",
+   "name": "HARDWARE",
+   "parent": "",
+   "slug": "hardware",
+   "sortOrder": 63
+  },
+  {
+   "catId": "washers",
+   "name": "Washers",
+   "parent": "hardware",
+   "slug": "washers",
+   "sortOrder": 67
+  },
+  {
+   "catId": "hole-reducers",
+   "name": "Hole Reducers",
+   "parent": "hardware",
+   "slug": "hole-reducers",
+   "sortOrder": 69
+  },
+  {
+   "catId": "nuts",
+   "name": "Nuts",
+   "parent": "hardware",
+   "slug": "nuts",
+   "sortOrder": 70
+  },
+  {
+   "catId": "springs",
+   "name": "Springs",
+   "parent": "hardware",
+   "slug": "springs",
+   "sortOrder": 71
+  },
+  {
+   "catId": "threaded-plates",
+   "name": "Threaded Plates",
+   "parent": "hardware",
+   "slug": "threaded-plates",
+   "sortOrder": 72
+  },
+  {
+   "catId": "standoffs-spacers-3",
+   "name": "Standoffs & Spacers",
+   "parent": "hardware",
+   "slug": "standoffs-spacers-3",
+   "sortOrder": 73
+  },
+  {
+   "catId": "collars-1",
+   "name": "Collars",
+   "parent": "hardware",
+   "slug": "collars-1",
+   "sortOrder": 74
+  },
+  {
+   "catId": "hinges",
+   "name": "Hinges",
+   "parent": "hardware",
+   "slug": "hinges",
+   "sortOrder": 75
+  },
+  {
+   "catId": "tools",
+   "name": "Tools",
+   "parent": "hardware",
+   "slug": "tools",
+   "sortOrder": 76
+  },
+  {
+   "catId": "rubber-tubing-cord",
+   "name": "Rubber Tubing & Cord",
+   "parent": "hardware",
+   "slug": "rubber-tubing-cord",
+   "sortOrder": 77
+  },
+  {
+   "catId": "ptfe-tubing",
+   "name": "PTFE Tubing",
+   "parent": "hardware",
+   "slug": "ptfe-tubing",
+   "sortOrder": 78
+  },
+  {
+   "catId": "cinch-straps",
+   "name": "Cinch-Straps",
+   "parent": "hardware",
+   "slug": "cinch-straps",
+   "sortOrder": 81
+  },
+  {
+   "catId": "grommets",
+   "name": "Grommets",
+   "parent": "hardware",
+   "slug": "grommets",
+   "sortOrder": 82
+  },
+  {
+   "catId": "rubber-feet",
+   "name": "Rubber Feet",
+   "parent": "hardware",
+   "slug": "rubber-feet",
+   "sortOrder": 83
+  },
+  {
+   "catId": "magnets",
+   "name": "Magnets",
+   "parent": "hardware",
+   "slug": "magnets",
+   "sortOrder": 84
+  },
+  {
+   "catId": "debris-shields",
+   "name": "Debris-Shields",
+   "parent": "hardware",
+   "slug": "debris-shields",
+   "sortOrder": 85
+  },
+  {
+   "catId": "thread-locker",
+   "name": "Thread Locker",
+   "parent": "hardware",
+   "slug": "thread-locker",
+   "sortOrder": 86
+  },
+  {
+   "catId": "hardware-bundles",
+   "name": "Hardware Bundles",
+   "parent": "hardware",
+   "slug": "hardware-bundles",
+   "sortOrder": 88
+  },
+  {
+   "catId": "kits",
+   "name": "KITS",
+   "parent": "",
+   "slug": "kits",
+   "sortOrder": 89
+  },
+  {
+   "catId": "ftc-kits",
+   "name": "FTC Kits",
+   "parent": "kits",
+   "slug": "ftc-kits",
+   "sortOrder": 90
+  },
+  {
+   "catId": "chassis-kits",
+   "name": "Chassis Kits",
+   "parent": "kits",
+   "slug": "chassis-kits",
+   "sortOrder": 91
+  },
+  {
+   "catId": "linear-motion-kits",
+   "name": "Linear Motion Kits",
+   "parent": "kits",
+   "slug": "linear-motion-kits",
+   "sortOrder": 92
+  },
+  {
+   "catId": "pan-kits",
+   "name": "Pan Kits",
+   "parent": "kits",
+   "slug": "pan-kits",
+   "sortOrder": 93
+  },
+  {
+   "catId": "merch",
+   "name": "MERCH",
+   "parent": "",
+   "slug": "merch",
+   "sortOrder": 95
+  }
+ ]
+}

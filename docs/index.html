@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lab Inventory</title>
+<meta name="description" content="Browse the robotics lab parts catalogue, check what is available, and file a checkout or return request.">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0e0b0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e0b0a'/%3E%3Cpath d='M9 8v16h14' stroke='%23e44642' stroke-width='3.4' fill='none' stroke-linecap='square'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/css/theme.css">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+
+<!-- Inline icon sprite. No CDN is permitted by the contract, so icons are
+     hand-drawn on one 24px grid at one stroke weight rather than pulled from
+     an icon library. Kept deliberately small: six shapes, no decoration. -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8 20 20"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3 4 7.2v9.6L12 21l8-4.2V7.2z"/><path d="M4 7.2 12 11.5l8-4.3M12 11.5V21"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
+
+<a class="skip" href="#main">Skip to the catalogue</a>
+
+<div id="bannerSlot"></div>
+
+<header class="topbar">
+  <a class="brand" href="#/">
+    <span class="brand__mark">LAB<b>/</b>INVENTORY</span>
+    <span class="brand__team" id="brandTeam">Masquerade 4997</span>
+  </a>
+
+  <div class="search" id="searchWrap">
+    <svg class="icon search__icon"><use href="#i-search"/></svg>
+    <label class="u-sr" for="q">Search parts by name, part number, or category</label>
+    <input class="search__input" id="q" type="search" autocomplete="off" spellcheck="false"
+           placeholder="Search parts, part numbers, categories" enterkeyhint="search">
+    <span class="search__meta" id="searchMeta" aria-hidden="true"></span>
+    <button class="search__clear" id="qClear" type="button" title="Clear search">
+      <span class="u-sr">Clear search</span>
+      <svg class="icon" style="width:14px;height:14px"><use href="#i-x"/></svg>
+    </button>
+  </div>
+
+  <div class="topbar__right">
+    <button class="btn btn--sm btn--ghost only-mobile" id="catsBtn" type="button" aria-expanded="false" aria-controls="sidebar">
+      <svg class="icon"><use href="#i-list"/></svg>
+      <span class="u-sr">Browse categories</span>
+    </button>
+    <button class="btn btn--sm btn--ghost btn--icon" id="themeBtn" type="button" title="Switch to light theme">
+      <svg class="icon"><use href="#i-theme"/></svg>
+      <span class="u-sr" id="themeLabel">Switch to light theme</span>
+    </button>
+    <button class="btn btn--sm btn--primary btn--responsive" id="requestBtn" type="button">
+      <svg class="icon"><use href="#i-plus"/></svg>
+      <span class="btn__text">Request a part</span>
+      <span class="u-sr">Open the checkout and return request form</span>
+    </button>
+  </div>
+</header>
+
+<div class="shell">
+
+  <aside class="sidebar" id="sidebar" aria-label="Categories">
+    <h2 class="sidebar__title">Browse</h2>
+    <nav id="catNav"></nav>
+  </aside>
+
+  <main class="main" id="main" tabindex="-1">
+    <div class="main__head">
+      <div class="main__title">
+        <div class="crumb" id="crumb" hidden></div>
+        <h1 id="viewTitle">All parts</h1>
+      </div>
+      <label class="switch" title="Hide anything with nothing on the shelf">
+        <input type="checkbox" id="availOnly">
+        <span class="switch__track"><span class="switch__thumb"></span></span>
+        <span>In stock only</span>
+      </label>
+      <span class="main__count" id="resultCount" aria-live="polite"></span>
+    </div>
+
+    <div class="grid-vp" id="grid" role="list" aria-busy="true"></div>
+    <div id="gridState"></div>
+  </main>
+</div>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<!-- CONTRACT 6: fixed bottom-left credit, real DOM text, 9px, .06em, muted, .75 -->
+<p class="credit">created by Advay</p>
+
+<script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
