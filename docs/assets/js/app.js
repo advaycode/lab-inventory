@@ -580,7 +580,7 @@ function stockBlock(p) {
       <div class="stock__lbl">
         ${p.qtyTotal
           ? `available now<br><b>${p.qtyTotal}</b> owned, <b>${p.qtyOut}</b> checked out`
-          : `<b>Stock count not entered yet.</b><br>Ask Advay before you plan around this.`}
+          : `<b>Stock count not entered yet.</b><br>Ask an admin before you plan around this.`}
       </div>
     </div>`;
 }
@@ -1073,7 +1073,7 @@ function showConfirmation(requestId, part, quantity, type) {
           <span class="done__pending">Pending admin approval</span>
         </div>
         <p class="muted" style="font-size:var(--t-sm);margin-top:var(--s4)">
-          Nothing has moved yet. The count changes only once Advay approves it,
+          Nothing has moved yet. The count changes only once an admin approves it,
           so do not take the part off the shelf until then.
         </p>
       </div>
@@ -1174,7 +1174,7 @@ async function boot() {
 
   $("#requestBtn").addEventListener("click", () => {
     if (state.readOnly) {
-      toast("Requests need the backend. Advay has to set API_URL in config.js first.", "err", 6500);
+      toast("Requests need the backend. An admin has to set API_URL in config.js first.", "err", 6500);
       return;
     }
     openRequest({});
