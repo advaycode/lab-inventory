@@ -11,7 +11,7 @@
 // Constants
 // ---------------------------------------------------------------------------
 
-var SCRIPT_VERSION = '1.0.0';
+var SCRIPT_VERSION = '1.1.0-bulkloc';  // bump on every deploy so ?action=ping proves which code is live
 
 var PARTS_HEADERS = ['PartID', 'SKU', 'Name', 'Category', 'Subcategory', 'ImageURL',
   'LocalImage', 'ProductURL', 'Description', 'Location', 'QtyTotal', 'QtyOut',
