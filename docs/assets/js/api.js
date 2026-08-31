@@ -210,8 +210,8 @@ export function logout() { clearToken(); }
 export const pendingRequests = () => apiAuth({ action: "pending" });
 export const listRequests = (status, limit = 100, offset = 0) =>
   apiAuth({ action: "requests", status, limit, offset });
-export const decide = (requestId, decision, adminNote = "") =>
-  apiAuth({ action: "decide", requestId, decision, adminNote });
+export const decide = (requestId, decision, adminNote = "", force = false) =>
+  apiAuth({ action: "decide", requestId, decision, adminNote, force });
 export const upsertPart = (part) => apiAuth({ action: "upsertPart", part });
 export const deletePart = (partId) => apiAuth({ action: "deletePart", partId });
 export const adjustQty = (partId, qtyTotal) => apiAuth({ action: "adjustQty", partId, qtyTotal });

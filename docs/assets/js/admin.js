@@ -416,6 +416,7 @@ function wireQueue() {
       return;
     }
     if (btn.dataset.act === "approve") return decide(req, "approve", "", row);
+    if (btn.dataset.act === "approve-force") return decide(req, "approve", "", row, true);
     if (btn.dataset.act === "deny") return decide(req, "deny", row.querySelector(".input").value.trim(), row);
   });
 
@@ -441,6 +442,7 @@ function wireQueue() {
    so what you see is the truth, not our optimistic guess. */
 let approveAllArmed = false;
 let approveAllTimer = null;
+let approveAllForce = [];
 
 function disarmApproveAll() {
   approveAllArmed = false;
@@ -451,7 +453,11 @@ function disarmApproveAll() {
 
 async function approveAll() {
   const btn = $("#approveAllBtn");
-  const items = st.queue.slice();
+  const force = approveAllForce.length > 0;
+  const items = force
+    ? st.queue.filter((r) => approveAllForce.includes(r.requestId))
+    : st.queue.slice();
+  approveAllForce = [];
   if (!items.length) return;
 
   if (!approveAllArmed) {
@@ -467,10 +473,11 @@ async function approveAll() {
   btn.disabled = true;
   let done = 0;
   const failed = [];
+  const shortStock = [];
   for (const req of items) {
     btn.textContent = `Approving ${done + 1} of ${items.length}...`;
     try {
-      const data = await api.decide(req.requestId, "approve", "");
+      const data = await api.decide(req.requestId, "approve", "", force);
       if (data?.part) upsertPartLocal(data.part);
       st.queue = st.queue.filter((r) => r.requestId !== req.requestId);
       done += 1;
@@ -478,11 +485,23 @@ async function approveAll() {
       if (st.tab === "parts") renderPartList();
     } catch (e) {
       if (e.code === "UNAUTHORIZED") { btn.disabled = false; return; }
-      failed.push(`${req.quantity} x ${req.partName || req.partId}: ${e.message}`);
+      if (e.code === "INSUFFICIENT_STOCK") shortStock.push(req);
+      else failed.push(`${req.quantity} x ${req.partName || req.partId}: ${e.message}`);
     }
   }
   btn.disabled = false;
   await loadQueue(true);
+
+  if (shortStock.length && !force) {
+    // Do not silently overrule the shelf count in a bulk action. Say how many
+    // it refused and make the override a separate, deliberate press.
+    approveAllForce = shortStock.map((r) => r.requestId);
+    btn.hidden = false;
+    btn.classList.add("btn--danger");
+    btn.textContent = `Approve ${shortStock.length} anyway (over stock)`;
+    toast(`Approved ${done}. ${shortStock.length} ask for more than the shelf shows.`, "err", 10000);
+    return;
+  }
   if (failed.length) {
     toast(`Approved ${done}. ${failed.length} could not be approved - ${failed[0]}`, "err", 10000);
   } else {
@@ -490,7 +509,7 @@ async function approveAll() {
   }
 }
 
-async function decide(req, decision, adminNote, row) {
+async function decide(req, decision, adminNote, row, force = false) {
   row.classList.add("is-busy");
 
   const index = st.queue.indexOf(req);
@@ -504,7 +523,7 @@ async function decide(req, decision, adminNote, row) {
 
   const what = `${req.quantity} x ${req.partName || req.partId}`;
   try {
-    const data = await api.decide(req.requestId, decision, adminNote);
+    const data = await api.decide(req.requestId, decision, adminNote, force);
     if (data?.part) {
       const p = upsertPartLocal(data.part);
       renderQueue();
@@ -521,6 +540,21 @@ async function decide(req, decision, adminNote, row) {
     if (e.code === "UNAUTHORIZED") return;
     st.queue.splice(index, 0, req);              // rollback: the row goes back
     if (part && before) { part.qtyOut = before.qtyOut; part.qtyAvailable = before.qtyAvailable; }
+    if (e.code === "INSUFFICIENT_STOCK" && decision === "approve" && !force) {
+      // The shelf count is frequently behind reality and the part is often
+      // physically there. Say so, then let the same button push it through.
+      renderQueue();
+      const again = document.querySelector(`.req[data-id="${CSS.escape(req.requestId)}"] [data-act="approve"]`);
+      if (again) {
+        again.dataset.act = "approve-force";
+        again.classList.remove("btn--primary");
+        again.classList.add("btn--danger");
+        again.textContent = "Approve anyway";
+        again.title = e.message;
+      }
+      toast(`${e.message} Press "Approve anyway" to approve it regardless.`, "err", 9000);
+      return;
+    }
     renderQueue();
     if (st.tab === "parts") renderPartList();
     toast(e.code === "INSUFFICIENT_STOCK"

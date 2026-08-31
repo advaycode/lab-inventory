@@ -11,7 +11,7 @@
 // Constants
 // ---------------------------------------------------------------------------
 
-var SCRIPT_VERSION = '1.2.0-board';  // bump on every deploy so ?action=ping proves which code is live
+var SCRIPT_VERSION = '1.3.0-override';  // bump on every deploy so ?action=ping proves which code is live
 
 var PARTS_HEADERS = ['PartID', 'SKU', 'Name', 'Category', 'Subcategory', 'ImageURL',
   'LocalImage', 'ProductURL', 'Description', 'Location', 'QtyTotal', 'QtyOut',
@@ -388,6 +388,12 @@ function decideAction(body) {
   if (!requestId) return fail('BAD_INPUT', 'requestId is required.');
   if (decision !== 'approve' && decision !== 'deny') return fail('BAD_INPUT', 'decision must be approve or deny.');
   var adminNote = sanitizeStr(body.adminNote, 500);
+  // The shelf count is often behind reality -- a part gets restocked, or the
+  // lab simply has not entered its counts yet -- and the physical object is
+  // right there. So the stock rule is advisory on an explicit override, never
+  // a wall. The override is deliberate (the client has to ask for it) and it
+  // is recorded in the log with the size of the shortfall.
+  var force = body.force === true || body.force === 'true';
 
   return withLock(function () {
     var reqSheet = sh('Requests');
@@ -430,8 +436,14 @@ function decideAction(body) {
       var qtyTotal = Number(pRow[10]) || 0;
       var qtyOut = Number(pRow[11]) || 0;
       var qty = Number(reqObj.Quantity) || 0;
-      if (qty > (qtyTotal - qtyOut)) {
-        return fail('INSUFFICIENT_STOCK', 'Not enough stock available.');
+      var short = qty - (qtyTotal - qtyOut);
+      if (short > 0 && !force) {
+        return fail('INSUFFICIENT_STOCK',
+          'Only ' + Math.max(0, qtyTotal - qtyOut) + ' of ' + qtyTotal + ' on the shelf, and this asks for ' + qty + '.');
+      }
+      if (short > 0) {
+        appendLog('admin', 'decide:approve:override', requestId,
+          JSON.stringify({ requested: qty, available: Math.max(0, qtyTotal - qtyOut), over: short }));
       }
       pRow[11] = qtyOut + qty;
       pRow[15] = now;
@@ -822,10 +834,14 @@ function partToApi(p) {
   var qtyTotal = Number(p.QtyTotal) || 0;
   var qtyOut = Number(p.QtyOut) || 0;
   var qtyAvailable = Math.max(0, qtyTotal - qtyOut);
+  // How far past the recorded count the shelf has been issued. Kept separate
+  // so qtyAvailable never goes negative on the student-facing side.
+  var qtyOver = Math.max(0, qtyOut - qtyTotal);
   return {
     partId: p.PartID, sku: p.SKU, name: p.Name, category: p.Category, subcategory: p.Subcategory,
     imageUrl: p.ImageURL, localImage: p.LocalImage, productUrl: p.ProductURL, description: p.Description,
     location: p.Location, qtyTotal: qtyTotal, qtyOut: qtyOut, qtyAvailable: qtyAvailable,
+    qtyOver: qtyOver,
     unit: p.Unit || 'ea', active: (p.Active === true || p.Active === 'TRUE'),
     notes: p.Notes, updatedAt: asIsoStr(p.UpdatedAt)
   };

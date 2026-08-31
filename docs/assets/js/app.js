@@ -551,7 +551,11 @@ function mountPanel(html, { wide = false, onClose } = {}) {
   };
   document.addEventListener("keydown", keys, true);
   scrim.addEventListener("click", () => closePanel());
-  panel.querySelector("[data-close]")?.addEventListener("click", () => closePanel());
+  // querySelectorAll, not querySelector: several panels carry both a header
+  // "x" and a footer button (Done / Close / Cancel). Wiring only the first
+  // left the footer button inert.
+  panel.querySelectorAll("[data-close]").forEach((b) =>
+    b.addEventListener("click", () => closePanel()));
 
   openPanel = { scrim, panel, keys, opener, onClose };
   (panel.querySelector("[data-autofocus]") || panel.querySelector("[data-close]"))?.focus();
@@ -786,12 +790,21 @@ function validate(v, picked, type) {
   return e;
 }
 
-function openRequest({ part = null } = {}) {
+function openRequest({ part = null, returnFor = null } = {}) {
   const me = readIdentity();
-  let type = "checkout";
-  let picked = part;
+  let type = returnFor ? "return" : "checkout";
+  let picked = part || (returnFor ? store.byId?.get(returnFor.partId) || null : null);
   let mineList = [];
-  let linkedRequestId = "";
+  let linkedRequestId = returnFor ? returnFor.requestId : "";
+
+  /* Declared up here, not beside setErr: syncPicked() runs while the panel is
+     being built -- whenever a part is pre-selected -- and reaches these. As
+     consts further down they were still in the temporal dead zone, so opening
+     the form with a part already chosen threw before it finished. */
+  const ERR = { name: "#e-name", teamNumber: "#e-team", part: "#e-part",
+                quantity: "#e-qty", checkoutDate: "#e-out", returnDate: "#e-back", userNote: "#e-note" };
+  const FIELD = { name: "#f-name", teamNumber: "#f-team", part: "#f-part",
+                  quantity: "#f-qty", checkoutDate: "#f-out", returnDate: "#f-back", userNote: "#f-note" };
 
   const panel = mountPanel(`
     <div class="panel__head">
@@ -968,12 +981,6 @@ function openRequest({ part = null } = {}) {
   }
   panel.querySelector("#f-team").addEventListener("blur", () => { if (type === "return") loadMine(); });
 
-  /* ---- errors ---- */
-  const ERR = { name: "#e-name", teamNumber: "#e-team", part: "#e-part",
-                quantity: "#e-qty", checkoutDate: "#e-out", returnDate: "#e-back", userNote: "#e-note" };
-  const FIELD = { name: "#f-name", teamNumber: "#f-team", part: "#f-part",
-                  quantity: "#f-qty", checkoutDate: "#f-out", returnDate: "#f-back", userNote: "#f-note" };
-
   function setErr(key, msg) {
     const e = panel.querySelector(ERR[key]);
     const f = panel.querySelector(FIELD[key]);
@@ -1055,6 +1062,22 @@ function openRequest({ part = null } = {}) {
       }
     }
   });
+
+  /* ---- opened from the activity board: a return of one known loan, so the
+     form arrives already answered and the link is carried through rather than
+     asking the student to find their own checkout in a dropdown.
+     This runs last: syncPicked() reaches ERR/FIELD, which are const and would
+     still be in the temporal dead zone earlier in this function. ---- */
+  if (returnFor) {
+    panel.querySelector("#f-name").value = returnFor.name || "";
+    const teamSel = panel.querySelector("#f-team");
+    if (teamSel) teamSel.value = returnFor.teamNumber || "";
+    panel.querySelector("#f-qty").value = String(returnFor.quantity || 1);
+    panel.querySelector('[data-type="return"]')?.click();
+    linkedRequestId = returnFor.requestId;             // after the click: the
+    panel.querySelector("#mineSlot").hidden = true;    // picker would clear it
+    syncPicked();
+  }
 }
 
 function showConfirmation(requestId, part, quantity, type) {
@@ -1177,7 +1200,9 @@ function renderBoard() {
               <b>${esc(r.name)}</b>
               <span class="brow__team">${esc(teamLabel(r.teamNumber))}</span>
             </span>
-            <span class="brow__qty">x${r.quantity}</span>
+            <span class="brow__qty">x${r.quantity}${st === "out"
+              ? `<button class="btn btn--sm brow__act" type="button" data-return="${esc(r.requestId)}">Return</button>`
+              : ""}</span>
             <span class="brow__status">
               <span class="dot ${meta.cls}"></span>
               <span>${esc(meta.label)}
@@ -1230,6 +1255,14 @@ function wireBoard() {
     TEAMS.map((t) => `<option value="${esc(t.number)}">${esc(t.name)} ${esc(t.number)}</option>`).join("");
   sel.addEventListener("change", () => { boardState.team = sel.value; renderBoard(); });
   $("#boardRefresh").addEventListener("click", () => loadBoard(true));
+  $("#boardBody").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-return]");
+    if (!b) return;
+    const r = boardState.rows.find((x) => x.requestId === b.dataset.return);
+    if (!r) return;
+    if (!state.online) { toast("Returns need the backend to be connected.", "err", 6000); return; }
+    openRequest({ returnFor: r });
+  });
   $("#tabBoard").addEventListener("click", () => { location.hash = "#/activity"; showView("board"); });
   $("#tabCatalogue").addEventListener("click", () => { location.hash = "#/"; showView("catalogue"); });
   if (location.hash.startsWith("#/activity")) showView("board");

@@ -630,3 +630,14 @@ body {
 @media (max-width: 620px) {
   .viewtabs { grid-area: tabs; margin-left: 0; justify-self: start; }
 }
+
+/* Return action inside a board row. The row is not itself clickable, so this
+   is the only affordance and it needs to read as one. */
+.brow__act {
+  margin-left: var(--s3);
+  vertical-align: middle;
+}
+@media (max-width: 720px) {
+  .brow__qty { display: inline-flex; align-items: center; gap: var(--s2); }
+  .brow__act { margin-left: 0; }
+}
