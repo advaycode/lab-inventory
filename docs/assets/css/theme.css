@@ -118,7 +118,7 @@
   /* A band along the bottom of the viewport that scrolling content never
      enters. The credit lives in it, which is how it can be fixed bottom-left
      and still be guaranteed never to sit on top of a control. */
-  --credit-strip: 40px;
+  --credit-strip: 52px;
 }
 
 /* ---------- reset ---------- */
@@ -306,11 +306,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 11px;
-  letter-spacing: .04em;
-  line-height: 1;
+  line-height: 1.25;
   color: var(--text-2);
-  opacity: .92;
+  opacity: .94;
   font-family: var(--font);
   pointer-events: none;
   user-select: none;
@@ -325,18 +323,28 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* The mark ships with its own dark plate, so it is rounded rather than keyed
    out -- it reads as a badge in both themes instead of a floating smudge. */
+.credit__text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.credit__title {
+  font-size: 11px; font-weight: 600; letter-spacing: .01em; color: var(--text);
+}
+.credit__by {
+  font-size: 10px; letter-spacing: .04em; color: var(--text-3);
+}
+
 .credit__logo {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
   flex: 0 0 auto;
   background: #2f2f31;
 }
 
-@media (max-width: 380px) {
-  .credit { font-size: 10px; gap: 6px; }
-  .credit__logo { width: 20px; height: 20px; }
+@media (max-width: 420px) {
+  .credit { gap: 6px; padding: 4px 8px 4px 4px; }
+  .credit__title { font-size: 10px; }
+  .credit__by { font-size: 9px; }
+  .credit__logo { width: 24px; height: 24px; }
 }
 
 /* ---------- skeletons ---------- */
