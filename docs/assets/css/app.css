@@ -93,6 +93,15 @@
 
 .topbar__right { display: flex; align-items: center; gap: var(--s2); }
 
+/* Explicit columns. Auto-placement would shift every later child left when the
+   search is display:none on the activity view, which stretched the tabs across
+   the 1fr column. Pinning them makes the header independent of which children
+   happen to be present. The phone layout overrides these with grid-area. */
+.topbar > .brand        { grid-column: 1; }
+.topbar > .search       { grid-column: 2; }
+.topbar > .viewtabs     { grid-column: 3; }
+.topbar > .topbar__right{ grid-column: 4; }
+
 .icon { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none;
         stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -110,6 +119,11 @@ body {
   padding-bottom: var(--credit-strip);
 }
 #bannerSlot, .topbar { flex: none; }
+
+/* display:grid below outranks the UA default [hidden]{display:none}, so the
+   catalogue would keep occupying the page underneath the activity board. */
+.shell[hidden] { display: none; }
+.search[hidden] { display: none; }
 
 .shell {
   flex: 1 1 auto;
@@ -514,16 +528,41 @@ body {
 .viewtab.is-on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-1); }
 .viewtab:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-.board { padding: var(--s5); max-width: 1200px; margin: 0 auto; }
+/* body is a fixed-height flex column with overflow hidden, so every top-level
+   view has to do its own scrolling. Centring is done with padding rather than
+   max-width + auto margins so the scrollbar stays on the viewport edge. */
+.board {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--s5) max(var(--s5), calc((100% - 1200px) / 2)) var(--s6);
+}
 .board[hidden] { display: none; }
 .board__head {
   display: flex; align-items: flex-end; gap: var(--s4);
   flex-wrap: wrap; margin-bottom: var(--s4);
 }
+.board__head > div:first-child { min-width: 220px; flex: 1 1 auto; }
 .board__head h1 { margin: 0 0 4px; }
 .board__sub { margin: 0; color: var(--text-3); font-size: var(--t-sm); }
 .board__filters { display: flex; gap: var(--s3); margin-left: auto; align-items: center; }
 .board__filters .input { min-width: 190px; }
+
+.metrics {
+  display: flex; flex-wrap: wrap;
+  border: 1px solid var(--line-soft); border-radius: var(--r-md);
+  background: var(--surface);
+  margin: 0 0 var(--s4);
+  overflow: hidden;
+}
+.metric { flex: 1 1 140px; padding: var(--s3) var(--s4); border-left: 1px solid var(--line-soft); }
+.metric:first-child { border-left: 0; }
+.metric dt { font-size: var(--t-xs); color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; }
+.metric dd {
+  margin: 4px 0 0; font-family: var(--font-mono); font-size: var(--t-xl);
+  font-weight: 620; letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+}
 
 .legend {
   display: flex; flex-wrap: wrap; gap: var(--s3) var(--s4);
