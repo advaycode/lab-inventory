@@ -98,12 +98,14 @@ const state = {
 /* banner (CONTRACT 7.2)                                                       */
 /* -------------------------------------------------------------------------- */
 
-function showBanner(kind, title, body) {
+function showBanner(kind, title, body, action = null) {
   const slot = $("#bannerSlot");
   slot.innerHTML = `
     <div class="banner ${kind === "quiet" ? "banner--quiet" : ""}" role="status">
       <div class="banner__body"><strong>${esc(title)}</strong> ${esc(body)}</div>
+      ${action ? `<button class="btn btn--sm" type="button" id="bannerAct">${esc(action.label)}</button>` : ""}
     </div>`;
+  if (action) $("#bannerAct").addEventListener("click", action.onClick);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1288,17 +1290,31 @@ async function boot() {
   let loaded = false;
   if (api.hasApi()) {
     try {
-      const data = await api.getCatalog();
+      const data = await api.getCatalogCached();
       loadCatalog({ parts: data.parts, version: data.version }, "api");
       if (Array.isArray(data.categories) && data.categories.length) {
         cats = { categories: data.categories };
       }
-      state.online = true;
-      state.readOnly = false;
       loaded = true;
+
+      if (data.stale) {
+        // We have a real catalogue from a previous visit, just not a fresh one.
+        // Browsing and searching are fine; only sending is not, so say that
+        // plainly rather than crying that the whole backend is gone.
+        state.online = false;
+        state.readOnly = true;
+        showBanner("quiet", "Showing your saved copy.",
+          "The backend did not answer just now, so this is the catalogue from your last visit. " +
+          "Availability may have moved on and requests cannot be sent until it reconnects.",
+          { label: "Try again", onClick: () => location.reload() });
+      } else {
+        state.online = true;
+        state.readOnly = false;
+      }
     } catch (err) {
       showBanner("accent", "Backend unreachable.",
-        `Showing the catalogue that ships with the site. Availability may be out of date and requests cannot be sent. (${err.message})`);
+        `Showing the catalogue that ships with the site. Availability may be out of date and requests cannot be sent. (${err.message})`,
+        { label: "Try again", onClick: () => location.reload() });
     }
   } else {
     showBanner("quiet", "Read-only preview.",

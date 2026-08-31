@@ -641,3 +641,6 @@ body {
   .brow__qty { display: inline-flex; align-items: center; gap: var(--s2); }
   .brow__act { margin-left: 0; }
 }
+
+/* Banner action sits at the end of the strip, never wider than it needs. */
+#bannerAct { flex: 0 0 auto; margin-left: var(--s3); }

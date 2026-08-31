@@ -12,7 +12,7 @@
                 body, not in a header.
    ========================================================================== */
 
-import { API_URL, CATALOG_URL, CATEGORIES_URL, REQUEST_TIMEOUT } from "./config.js";
+import { API_URL, CATALOG_URL, CATEGORIES_URL, REQUEST_TIMEOUT, CATALOG_TIMEOUT } from "./config.js";
 
 /* --------------------------------------------------------------------------
    Errors
@@ -108,14 +108,14 @@ async function readJson(res) {
 }
 
 /** GET read. */
-async function apiGet(action, params = {}) {
+async function apiGet(action, params = {}, timeoutMs = REQUEST_TIMEOUT) {
   if (!hasApi()) throw new ApiError("SERVER", "API_URL is not set in config.js.", 0);
   const url = new URL(API_URL);
   url.searchParams.set("action", action);
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
   }
-  const t = withTimeout(REQUEST_TIMEOUT);
+  const t = withTimeout(timeoutMs);
   let res;
   try {
     res = await fetch(url.toString(), { method: "GET", redirect: "follow", signal: t.signal });
@@ -186,7 +186,67 @@ export function loadSeedCategories() { return loadLocalJson(CATEGORIES_URL, "the
    -------------------------------------------------------------------------- */
 
 export const ping = () => apiGet("ping");
-export const getCatalog = (since) => apiGet("catalog", { since });
+/* ---------------------------------------------------------------------------
+   Catalogue fetch.
+
+   ~1.9MB over a link that is often a phone on lab wifi, so:
+     - it is cached in localStorage against the server's catalogVersion;
+     - `since` lets the server answer "unchanged" in a few bytes instead of
+       resending everything;
+     - one transient failure is retried before anyone is told anything.
+   A blip should cost a second, not a red banner over a stale catalogue.
+   ------------------------------------------------------------------------ */
+const CATALOG_CACHE_KEY = "labinv.catalog.v1";
+
+export function readCatalogCache() {
+  try {
+    const raw = localStorage.getItem(CATALOG_CACHE_KEY);
+    if (!raw) return null;
+    const c = JSON.parse(raw);
+    return c && c.version && Array.isArray(c.parts) ? c : null;
+  } catch { return null; }
+}
+
+function writeCatalogCache(data) {
+  try {
+    localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({
+      version: data.version, parts: data.parts, categories: data.categories || [],
+    }));
+  } catch { /* quota or private mode: the cache is an optimisation, not a need */ }
+}
+
+export const getCatalog = (since) => apiGet("catalog", { since }, CATALOG_TIMEOUT);
+
+/**
+ * Returns { parts, categories, version, fromCache }.
+ * Throws only when there is no answer AND no usable cache.
+ */
+export async function getCatalogCached() {
+  const cached = readCatalogCache();
+  let lastErr = null;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const data = await getCatalog(cached ? cached.version : undefined);
+      if (data.unchanged && cached) return { ...cached, fromCache: true };
+      if (Array.isArray(data.parts)) {
+        writeCatalogCache(data);
+        return { version: data.version, parts: data.parts,
+                 categories: data.categories || [], fromCache: false };
+      }
+      // "unchanged" with no cache to honour it: ask again for the whole thing
+      const full = await getCatalog();
+      writeCatalogCache(full);
+      return { version: full.version, parts: full.parts,
+               categories: full.categories || [], fromCache: false };
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 0) await new Promise((r) => setTimeout(r, 1200));
+    }
+  }
+  if (cached) return { ...cached, fromCache: true, stale: true, error: lastErr };
+  throw lastErr;
+}
 export const getPart = (id) => apiGet("part", { id });
 
 export const board = (limit = 200) => apiGet("board", { limit });

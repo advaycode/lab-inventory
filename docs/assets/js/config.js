@@ -35,6 +35,11 @@ export const IMAGE_QUALITY = 0.85;
 /* Network timeout in ms. Apps Script cold starts are slow but not this slow. */
 export const REQUEST_TIMEOUT = 20000;
 
+/* The catalogue is ~1.9MB and Apps Script can take 3-9s to build it, more on a
+   cold start or a phone on lab wifi. It gets its own, longer budget so a slow
+   answer is not mistaken for a dead backend. */
+export const CATALOG_TIMEOUT = 45000;
+
 /* The four teams in the lab. The request form and the activity board both read
    this, so adding a team is a one-line change here. `number` is what gets
    stored in the Sheet; `name` is only ever shown. */
