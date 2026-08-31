@@ -31,7 +31,10 @@
   position: sticky; top: 0;
   z-index: var(--z-sticky);
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  /* brand | search | section tabs | actions -- a grid, so every child needs a
+     column of its own; adding one without widening this drops the next child
+     onto an implicit second row. */
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--s3);
   height: var(--header-h);
@@ -471,13 +474,14 @@ body {
   :root { --card-h: 248px; --card-min: 150px; --grid-gap: 10px; }
   .topbar {
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "brand right" "search search";
+    grid-template-areas: "brand right" "search search" "tabs tabs";
     height: auto; padding: 10px var(--s3); row-gap: 9px;
   }
   .brand { grid-area: brand; }
   .brand__team { display: none; }
   .search { grid-area: search; max-width: none; }
   .topbar__right { grid-area: right; }
+  .viewtabs { grid-area: tabs; margin-left: 0; justify-self: start; }
   .card__img { height: 104px; }
   .form__row { grid-template-columns: 1fr; }
   .credit { left: 10px; }
@@ -579,5 +583,11 @@ body {
   .brow__qty { display: none; }
   .board__filters { margin-left: 0; width: 100%; }
   .board__filters .input { flex: 1; min-width: 0; }
-  .viewtabs { order: 3; width: 100%; margin-left: 0; }
+}
+
+/* The base .viewtabs rule above is later in the file than the 620px block, so
+   at equal specificity it would win and re-indent the tabs row on a phone.
+   This re-states the phone placement after it. */
+@media (max-width: 620px) {
+  .viewtabs { grid-area: tabs; margin-left: 0; justify-self: start; }
 }
